@@ -323,7 +323,7 @@ function BackgroundModeRow() {
         onChange={(value) =>
           atomicUpdate({ backgroundMode: value as 'color' | 'image' })
         }
-        className="flex w-32 rounded border border-neutral-700 bg-neutral-950 p-0.5"
+        className="relative flex w-32 rounded border border-neutral-700 bg-neutral-950 p-0.5"
       >
         <Radio
           value="color"
