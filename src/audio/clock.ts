@@ -24,13 +24,40 @@ const realClock: Clock = {
 }
 
 let active: Clock = realClock
+let epoch = 0
 
 export function setActiveClock(clock: Clock): void {
   active = clock
+  epoch++
 }
 
 export function resetActiveClock(): void {
   active = realClock
+  epoch++
+}
+
+/**
+ * Bumped every time the active clock is swapped.
+ *
+ * `now()` is monotonic only WITHIN an epoch: the offline exporter
+ * installs a `VirtualClock` that restarts at 0, so the wall-clock value
+ * a live session was running on (`performance.now() / 1000`, which can
+ * be anything from seconds to hours) jumps backwards at the start of a
+ * render, and forwards again when the real clock is restored.
+ *
+ * Any state holding an ABSOLUTE timestamp is therefore meaningless
+ * across a change and has to be re-anchored — a per-key "keep the
+ * landing flash lit until T" deadline from the previous epoch sits in
+ * the future of the entire render, so the flash never turns off; a
+ * particle integrator that takes the raw difference gets a hugely
+ * negative `dt` and drives its exponential drag to Infinity.
+ *
+ * Consumers keep the last epoch they saw in a ref and reset when it
+ * moves. State that only stores DURATIONS (EMA filter memory, decay
+ * factors) needs no attention.
+ */
+export function clockEpoch(): number {
+  return epoch
 }
 
 export function now(): number {

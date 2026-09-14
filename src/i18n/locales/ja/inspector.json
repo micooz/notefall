@@ -133,6 +133,24 @@
     "perNoteVariation": "ノートごとのばらつき",
     "contrast": "テクスチャのコントラスト"
   },
+  "backgroundImage": {
+    "title": "背景画像",
+    "selectColor": "背景色",
+    "chooseImage": "画像を選択",
+    "noImage": "画像なし",
+    "clear": "クリア",
+    "fit": "フィットモード",
+    "cover": "カバー",
+    "contain": "全体を表示",
+    "stretch": "伸縮",
+    "scale": "拡大縮小",
+    "rotation": "回転",
+    "offsetX": "位置 X",
+    "offsetY": "位置 Y",
+    "opacity": "不透明度",
+    "loadErrorTitle": "背景画像を読み込めません",
+    "loadErrorMessage": "「{{name}}」をデコードできませんでした。\n\n{{detail}}"
+  },
   "direction": {
     "topToBottom": "上 → 下",
     "bottomToTop": "下 → 上"

@@ -16,7 +16,7 @@ const LANDING_FLASHES_KEYS = [
   'trackColors',
 ] as const
 import { audioEngine } from '../audio/engine'
-import { now } from '../audio/clock'
+import { clockEpoch, now } from '../audio/clock'
 import { getResolvedSettings } from '../scene/automatedSettings'
 import { KEYBOARD_LAYOUT, KEY_COUNT, MIDI_MIN, WHITE_KEY_LENGTH } from '../keyboard/layout'
 
@@ -116,6 +116,7 @@ export function LandingFlashes() {
   // Earliest wall-clock time at which a key can fade to off. Bumped on every
   // note-on so very short notes still show for at least MIN_HOLD_SECONDS.
   const heldUntil = useMemo(() => new Float32Array(KEY_COUNT), [])
+  const lastEpoch = useRef(clockEpoch())
 
   const material = useMemo(() => {
     return new THREE.ShaderMaterial({
@@ -202,6 +203,21 @@ export function LandingFlashes() {
 
   useFrame(() => {
     const nowSec = now()
+
+    // `heldUntil` stores an ABSOLUTE time, so it does not survive the
+    // exporter swapping `now()` for a virtual clock that restarts at 0
+    // (see `clockEpoch`). A deadline captured during the live session
+    // sits in the future of the entire render, so every key that was
+    // played before the export stayed lit for the whole video — the
+    // first N seconds of the render, where N is however long the page
+    // had been open. Drop the deadlines and let the frame below rebuild
+    // them from the render's own note-ons.
+    const epoch = clockEpoch()
+    if (epoch !== lastEpoch.current) {
+      lastEpoch.current = epoch
+      heldUntil.fill(-Infinity)
+    }
+
     const rs = getResolvedSettings()
 
     // Pin-resolved global uniforms (formerly per-field useEffects).

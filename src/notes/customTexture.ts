@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import * as THREE from 'three'
 import { useStore, registerCustomTextureBridge } from '../store'
 import type { CustomTextureSnapshot } from '../store'
-import { now } from '../audio/clock'
+import { clockEpoch, now } from '../audio/clock'
 
 /**
  * Holds the user-provided image used by the 'custom' note-texture preset.
@@ -37,6 +37,8 @@ type Animation = {
   currentIndex: number
   elapsedInFrame: number
   lastTick: number
+  /** Clock epoch `lastTick` was captured under — see `clockEpoch`. */
+  epoch: number
   rafId: number
 }
 
@@ -230,6 +232,7 @@ async function loadAnimatedFromBytes(
     currentIndex: 0,
     elapsedInFrame: 0,
     lastTick: now(),
+    epoch: clockEpoch(),
     rafId: 0,
   }
   scheduleTick(tex)
@@ -241,7 +244,21 @@ function scheduleTick(tex: THREE.Texture) {
     const a = activeAnimation
     if (!a) return
     const nowSec = now()
-    const dt = nowSec - a.lastTick
+
+    // The offline exporter swaps `now()` for a virtual clock that
+    // restarts at 0, so `lastTick` is from a different timeline and the
+    // raw difference is a large NEGATIVE dt. Left alone it drives
+    // `elapsedInFrame` so far negative that the frame cursor never
+    // advances again and the animation freezes for the whole render.
+    // Re-anchor on the discontinuity instead of integrating across it.
+    const epoch = clockEpoch()
+    if (epoch !== a.epoch) {
+      a.epoch = epoch
+      a.lastTick = nowSec
+      a.elapsedInFrame = 0
+    }
+
+    const dt = Math.max(0, nowSec - a.lastTick)
     a.lastTick = nowSec
     a.elapsedInFrame += dt
 

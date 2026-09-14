@@ -66,6 +66,11 @@ export type ProjectManifest = {
    */
   customTexture?: AssetRef | null
   /**
+   * Project-level stage background image. Optional so old `.nfz`
+   * files load without migration when no image was ever selected.
+   */
+  stageBackground?: AssetRef | null
+  /**
    * User-provided accompaniment audio (WAV / MP3 / etc.) the user
    * wants to sync against the MIDI visualization. The sync offset
    * and volume that pair with this asset live inside `settings`
@@ -89,6 +94,8 @@ export type Project = {
   songMidi: ArrayBuffer | null
   /** Bytes of the user's custom note-texture image. null when not in use. */
   customTexture: { bytes: ArrayBuffer; mime: string; fileName: string } | null
+  /** Bytes of the project-level stage background image. */
+  stageBackground: { bytes: ArrayBuffer; mime: string; fileName: string } | null
   /** Bytes of the user-provided accompaniment audio. null when not in use. */
   userAudio: { bytes: ArrayBuffer; mime: string; fileName: string } | null
 }

@@ -133,6 +133,24 @@
     "perNoteVariation": "Per-Note Variation",
     "contrast": "Texture Contrast"
   },
+  "backgroundImage": {
+    "title": "Background Image",
+    "selectColor": "Background Color",
+    "chooseImage": "Choose Image",
+    "noImage": "No image",
+    "clear": "Clear",
+    "fit": "Fit Mode",
+    "cover": "Cover",
+    "contain": "Contain",
+    "stretch": "Stretch",
+    "scale": "Scale",
+    "rotation": "Rotation",
+    "offsetX": "Offset X",
+    "offsetY": "Offset Y",
+    "opacity": "Opacity",
+    "loadErrorTitle": "Could not load background image",
+    "loadErrorMessage": "\"{{name}}\" could not be decoded.\n\n{{detail}}"
+  },
   "direction": {
     "topToBottom": "Top → Bottom",
     "bottomToTop": "Bottom → Top"

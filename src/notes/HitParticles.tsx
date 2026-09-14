@@ -34,7 +34,7 @@ const HIT_PARTICLES_KEYS = [
   'turbulenceZ',
 ] as const
 import { audioEngine } from '../audio/engine'
-import { now } from '../audio/clock'
+import { clockEpoch, now } from '../audio/clock'
 import { getResolvedSettings } from '../scene/automatedSettings'
 import { KEYBOARD_LAYOUT, KEY_COUNT, MIDI_MIN, WHITE_KEY_LENGTH, WHITE_KEY_WIDTH } from '../keyboard/layout'
 import { sampleCurl, dirFromXY } from './curlNoise'
@@ -376,6 +376,7 @@ export function HitParticles() {
   }, [])
   const writeIdx = useRef(0)
   const lastFrame = useRef(now())
+  const lastEpoch = useRef(clockEpoch())
   // Wall-clock moment of the latest-dying still-active particle. Used
   // as a cheap "are any particles alive?" gate so the per-particle
   // integration loop doesn't burn CPU at idle when every slot is dead.
@@ -456,7 +457,31 @@ export function HitParticles() {
 
   useFrame(() => {
     const nowSec = now()
-    const dt = Math.min(0.05, nowSec - lastFrame.current)
+
+    // The offline exporter swaps `now()` for a virtual clock that
+    // restarts at 0 (see `clockEpoch`). Every timestamp below is from
+    // the previous epoch, so drop the pool and re-anchor instead of
+    // integrating across the discontinuity: the raw difference would be
+    // a large NEGATIVE dt, which sends the exponential drag and the
+    // cascaded EMA (both `exp(-dt/tau)`) to Infinity and the particle
+    // velocities to NaN, and leaves every key that was played live
+    // reading as "just struck" for the whole render.
+    const epoch = clockEpoch()
+    if (epoch !== lastEpoch.current) {
+      lastEpoch.current = epoch
+      lastFrame.current = nowSec
+      births.fill(-1000)
+      noteOnTime.fill(-Infinity)
+      emitAccum.fill(0)
+      maxDeathTime.current = 0
+      aliveCountRef.current = 0
+    }
+
+    // Clamped at both ends: the upper bound absorbs backgrounded-tab
+    // gaps, the lower one is a guard against any other source of
+    // backwards time (the epoch reset above already handles the
+    // exporter's handoff).
+    const dt = Math.min(0.05, Math.max(0, nowSec - lastFrame.current))
     lastFrame.current = nowSec
 
     // Pin-resolved settings for every animatable particle parameter.
