@@ -23,11 +23,27 @@ uniform float uOpacity;
 uniform int uFitMode;
 uniform float uScale;
 uniform vec2 uOffset;
+uniform float uRotation;
 
 varying vec2 vUv;
 
 void main() {
-  vec2 uv = vUv;
+  // Rotate the sampling coordinate about the screen centre BEFORE the
+  // fit. The viewport aspect is undone first and reapplied after, so a
+  // non-square viewport turns the image instead of shearing it — a
+  // plain UV-space rotation would stretch it by the viewport ratio.
+  vec2 src = vUv;
+  if (uRotation != 0.0) {
+    vec2 p = vUv - 0.5;
+    p.x *= uViewportAspect;
+    float sr = sin(uRotation);
+    float cr = cos(uRotation);
+    p = vec2(p.x * cr - p.y * sr, p.x * sr + p.y * cr);
+    p.x /= uViewportAspect;
+    src = p + 0.5;
+  }
+
+  vec2 uv = src;
 
   if (uFitMode == 0) {
     vec2 scale = vec2(1.0);
@@ -36,12 +52,12 @@ void main() {
     } else {
       scale.x = uViewportAspect / uImageAspect;
     }
-    uv = (vUv - 0.5) * scale + 0.5;
+    uv = (src - 0.5) * scale + 0.5;
   } else if (uFitMode == 1) {
     if (uViewportAspect > uImageAspect) {
-      uv.x = (vUv.x - 0.5) * (uViewportAspect / uImageAspect) + 0.5;
+      uv.x = (src.x - 0.5) * (uViewportAspect / uImageAspect) + 0.5;
     } else {
-      uv.y = (vUv.y - 0.5) * (uImageAspect / uViewportAspect) + 0.5;
+      uv.y = (src.y - 0.5) * (uImageAspect / uViewportAspect) + 0.5;
     }
   }
 
@@ -76,6 +92,7 @@ export function StageBackground() {
   const scale = useStore((state) => state.settings.backgroundImageScale)
   const offsetX = useStore((state) => state.settings.backgroundImageOffsetX)
   const offsetY = useStore((state) => state.settings.backgroundImageOffsetY)
+  const rotation = useStore((state) => state.settings.backgroundImageRotation)
   const gl = useThree((state) => state.gl)
 
   const material = useMemo(
@@ -90,6 +107,7 @@ export function StageBackground() {
           uFitMode: { value: 0 },
           uScale: { value: 1 },
           uOffset: { value: new THREE.Vector2() },
+          uRotation: { value: 0 },
         },
         vertexShader,
         fragmentShader,
@@ -111,6 +129,8 @@ export function StageBackground() {
   material.uniforms.uFitMode.value = fit === 'cover' ? 0 : fit === 'contain' ? 1 : 2
   material.uniforms.uScale.value = scale
   material.uniforms.uOffset.value.set(offsetX, offsetY)
+  // Authored in degrees, which is what the camera rows use too.
+  material.uniforms.uRotation.value = (rotation * Math.PI) / 180
 
   useFrame(() => {
     gl.getDrawingBufferSize(size)

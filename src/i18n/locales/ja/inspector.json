@@ -144,6 +144,7 @@
     "contain": "全体を表示",
     "stretch": "伸縮",
     "scale": "拡大縮小",
+    "rotation": "回転",
     "offsetX": "位置 X",
     "offsetY": "位置 Y",
     "opacity": "不透明度",

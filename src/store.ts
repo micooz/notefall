@@ -203,6 +203,8 @@ export type Settings = {
   backgroundImageScale: number
   backgroundImageOffsetX: number
   backgroundImageOffsetY: number
+  /** Degrees, clockwise, about the centre of the viewport. */
+  backgroundImageRotation: number
   // Keyboard
   whiteKeyColor: string
   blackKeyColor: string
@@ -461,6 +463,7 @@ export const defaultSettings: Settings = {
   backgroundImageScale: 1,
   backgroundImageOffsetX: 0,
   backgroundImageOffsetY: 0,
+  backgroundImageRotation: 0,
   whiteKeyColor: '#f5f5f5',
   blackKeyColor: '#161616',
   woodColor: '#a87d38',

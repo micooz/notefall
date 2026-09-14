@@ -423,6 +423,14 @@ function BackgroundImageControls() {
               step={0.01}
             />
             <BoundSliderRow
+              label={t('backgroundImage.rotation')}
+              settingKey="backgroundImageRotation"
+              min={-180}
+              max={180}
+              step={1}
+              format={(v) => `${Math.round(v)}°`}
+            />
+            <BoundSliderRow
               label={t('backgroundImage.offsetX')}
               settingKey="backgroundImageOffsetX"
               min={-1}
