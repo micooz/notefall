@@ -43,7 +43,6 @@ import { audioEngine } from '../audio/engine'
 import { pauseSong, playSong, togglePlayback } from '../audio/playback'
 import { EditTools } from './EditTools'
 import { CameraControls, isCameraGestureActive } from './CameraControls'
-import { StageBackground } from './StageBackgroundLayer'
 
 // On-screen preview tick rate when the user opts into the lighter
 // 30 fps mode. The rendered MP4 export drives its own fps regardless
@@ -84,7 +83,6 @@ export function Scene() {
           resolved against the current playhead. */}
       <AutomatedSettingsDriver />
       <BackgroundSync />
-      <StageBackground />
       <SceneContents recState={recState} />
       {!highFps && <ThrottledTicker intervalMs={PREVIEW_FRAME_INTERVAL_MS} />}
       {s.bloomEnabled && (

@@ -3,12 +3,11 @@ import { audioEngine } from '../audio/engine'
 import { parseMidi } from '../midi/parse'
 import { serializeMidi } from '../midi/serialize'
 import { useCustomTexture } from '../notes/customTexture'
-import { useStageBackground } from '../scene/stageBackground'
 import { useUserAudio } from '../audio/userAudio'
 import { useStore } from '../store'
 import { track } from '../usage'
 import type { SongSource } from '../usage/events'
-import { showAlert, showConfirm } from '../ui/confirm'
+import { showConfirm } from '../ui/confirm'
 import {
   ensureExtension,
   isMidiName,
@@ -78,7 +77,6 @@ function suggestedFilename(): string {
 function buildProjectFromState(name: string): Project {
   const s = useStore.getState()
   const tex = useCustomTexture.getState()
-  const background = useStageBackground.getState()
   const audio = useUserAudio.getState()
   const now = Date.now()
   return {
@@ -101,14 +99,6 @@ function buildProjectFromState(name: string): Project {
     customTexture:
       tex.fileBytes && tex.fileMime && tex.fileName
         ? { bytes: tex.fileBytes, mime: tex.fileMime, fileName: tex.fileName }
-        : null,
-    stageBackground:
-      background.fileBytes && background.fileMime && background.fileName
-        ? {
-            bytes: background.fileBytes,
-            mime: background.fileMime,
-            fileName: background.fileName,
-          }
         : null,
     userAudio:
       audio.fileBytes && audio.fileMime && audio.fileName
@@ -228,31 +218,6 @@ async function applyOpenedProject(
       .setFromBytes(project.customTexture.bytes, project.customTexture.mime, project.customTexture.fileName)
   } else {
     useCustomTexture.getState().clearFromLoad()
-  }
-
-  // Clear first so a corrupt replacement cannot leave the previous
-  // project's image visible. Decoding then restores the new asset
-  // asynchronously; failure falls back to the solid background colour.
-  const backgroundStore = useStageBackground.getState()
-  backgroundStore.clearFromLoad()
-  if (project.stageBackground) {
-    void backgroundStore
-      .setFromBytes(
-        project.stageBackground.bytes,
-        project.stageBackground.mime,
-        project.stageBackground.fileName,
-      )
-      .catch((e) => {
-        track('error_surfaced', { context: 'stage_background' })
-        void showAlert({
-          title: i18n.t('inspector:backgroundImage.loadErrorTitle'),
-          message: i18n.t('inspector:backgroundImage.loadErrorMessage', {
-            name: project.stageBackground?.fileName ?? '',
-            detail: describeError(e),
-          }),
-          tone: 'error',
-        })
-      })
   }
 
   // Same pattern for the user-provided accompaniment audio. The decode
@@ -475,9 +440,6 @@ export async function newProject(): Promise<ActionResult> {
   // Drop any image carried over from the previous session — a fresh
   // project shouldn't inherit the previous look's texture.
   useCustomTexture.getState().clearFromLoad()
-  // Background imagery is project content too — a fresh project must not
-  // inherit the previous session's stage.
-  useStageBackground.getState().clearFromLoad()
   // Same for accompaniment audio — a fresh project starts with no
   // user audio attached.
   useUserAudio.getState().clearFromLoad()

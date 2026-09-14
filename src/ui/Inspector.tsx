@@ -15,22 +15,9 @@ import {
   useEffectiveSetting,
 } from './controls'
 import { VelocityCurveEditor } from './VelocityCurveEditor'
-import {
-  Button,
-  FileTrigger,
-  OverlayArrow,
-  Radio,
-  RadioGroup,
-  Tooltip,
-  TooltipTrigger,
-} from 'react-aria-components'
+import { Button, FileTrigger, OverlayArrow, Tooltip, TooltipTrigger } from 'react-aria-components'
 import { useCustomTexture } from '../notes/customTexture'
 import { CAMERA_LIMITS } from '../scene/cameraLimits'
-import {
-  STAGE_BACKGROUND_ACCEPTED_TYPES,
-  useStageBackground,
-} from '../scene/stageBackground'
-import { showAlert } from './confirm'
 
 const EQ_LABELS = ['80', '250', '800', '2.5k', '6k', '12k']
 
@@ -310,123 +297,6 @@ function TextureControls() {
   )
 }
 
-// ── Scene: project-level background image ───────────────────────────
-function BackgroundModeRow() {
-  const { t } = useTranslation('inspector')
-  const mode = useStore((state) => state.settings.backgroundMode)
-  return (
-    <div data-search-label={t('row.background')} className="flex items-center justify-between py-1 text-xs">
-      <span className="select-none text-neutral-400">{t('row.background')}</span>
-      <RadioGroup
-        orientation="horizontal"
-        value={mode}
-        onChange={(value) =>
-          atomicUpdate({ backgroundMode: value as 'color' | 'image' })
-        }
-        className="relative flex w-32 rounded border border-neutral-700 bg-neutral-950 p-0.5"
-      >
-        <Radio
-          value="color"
-          className="flex-1 cursor-pointer rounded px-2 py-1 text-center text-[10px] outline-none transition-colors data-[selected]:bg-sky-500/15 data-[selected]:text-sky-200 data-[focused]:ring-1 data-[focused]:ring-sky-500/40 [&:not([data-selected])]:text-neutral-400 [&:not([data-selected])]:hover:text-neutral-200"
-        >
-          {t('backgroundImage.modeColor')}
-        </Radio>
-        <Radio
-          value="image"
-          className="flex-1 cursor-pointer rounded px-2 py-1 text-center text-[10px] outline-none transition-colors data-[selected]:bg-sky-500/15 data-[selected]:text-sky-200 data-[focused]:ring-1 data-[focused]:ring-sky-500/40 [&:not([data-selected])]:text-neutral-400 [&:not([data-selected])]:hover:text-neutral-200"
-        >
-          {t('backgroundImage.modeImage')}
-        </Radio>
-      </RadioGroup>
-    </div>
-  )
-}
-
-function BackgroundImageControls() {
-  const { t } = useTranslation('inspector')
-  const fileName = useStageBackground((state) => state.fileName)
-  const setBackgroundFile = useStageBackground((state) => state.setFromFile)
-  const fit = useStore((state) => state.settings.backgroundImageFit)
-
-  const chooseImage = async (file: File) => {
-    try {
-      await setBackgroundFile(file)
-    } catch (error) {
-      await showAlert({
-        title: t('backgroundImage.loadErrorTitle'),
-        message: t('backgroundImage.loadErrorMessage', {
-          name: file.name,
-          detail: error instanceof Error ? error.message : String(error),
-        }),
-        tone: 'error',
-      })
-    }
-  }
-
-  return (
-    <>
-      <SearchableBlock label={`${t('backgroundImage.title')} ${t('backgroundImage.selectImage')}`}>
-        <div className="flex h-8 items-center justify-between gap-2 text-xs">
-          <span className="shrink-0 select-none text-neutral-400">
-            {t('backgroundImage.selectImage')}
-          </span>
-          <div className="flex min-w-0 items-center justify-end gap-1">
-            <FileTrigger
-              acceptedFileTypes={[...STAGE_BACKGROUND_ACCEPTED_TYPES]}
-              onSelect={async (event) => {
-                if (!event) return
-                const file = Array.from(event)[0]
-                if (file) await chooseImage(file)
-              }}
-            >
-              <Button className="shrink-0 rounded bg-neutral-800 px-2 py-1 text-[10px] text-neutral-200 hover:bg-neutral-700">
-                {t('backgroundImage.chooseImage')}
-              </Button>
-            </FileTrigger>
-            {fileName && (
-              <Button
-                onPress={() => void setBackgroundFile(null)}
-                className="shrink-0 rounded px-1.5 py-0.5 text-[10px] text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300"
-              >
-                {t('backgroundImage.clear')}
-              </Button>
-            )}
-          </div>
-        </div>
-      </SearchableBlock>
-      {fileName && (
-        <>
-          <SelectRow
-            label={t('backgroundImage.fit')}
-            value={fit}
-            options={[
-              { value: 'cover', label: t('backgroundImage.cover') },
-              { value: 'contain', label: t('backgroundImage.contain') },
-              { value: 'stretch', label: t('backgroundImage.stretch') },
-            ]}
-            onChange={(value) => atomicUpdate({ backgroundImageFit: value })}
-            defaultValue={def.backgroundImageFit}
-          />
-          <BoundSliderRow
-            label={t('backgroundImage.opacity')}
-            settingKey="backgroundImageOpacity"
-            min={0}
-            max={1}
-            step={0.01}
-          />
-          <BoundSliderRow
-            label={t('backgroundImage.brightness')}
-            settingKey="backgroundImageBrightness"
-            min={0}
-            max={2}
-            step={0.01}
-          />
-        </>
-      )}
-    </>
-  )
-}
-
 // ── Flash: color row gated on `flashFollowNote` ──────────────────────
 function FlashColorRow() {
   const { t } = useTranslation('inspector')
@@ -562,7 +432,6 @@ function PinEditingBanner() {
 export function Inspector() {
   const { t } = useTranslation('inspector')
   const reset = useStore((st) => st.resetSettings)
-  const backgroundMode = useStore((state) => state.settings.backgroundMode)
   const [query, setQuery] = useState('')
 
   return (
@@ -725,22 +594,7 @@ export function Inspector() {
         </Section>
 
         <Section title={t('section.scene')}>
-          <BackgroundModeRow />
-          <div
-            role="group"
-            aria-label={t('row.background')}
-            className="ml-3 border-l border-neutral-800 pl-3"
-          >
-            {backgroundMode === 'color' ? (
-              <BoundColorRow
-                label={t('backgroundImage.selectColor')}
-                settingKey="backgroundColor"
-                className="h-8 py-0"
-              />
-            ) : (
-              <BackgroundImageControls />
-            )}
-          </div>
+          <BoundColorRow label={t('row.background')} settingKey="backgroundColor" />
           <BoundSwitchRow label={t('row.highFpsPreview')} settingKey="previewHighFps" />
         </Section>
 

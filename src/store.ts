@@ -34,9 +34,6 @@ export type FallDirection = 'down' | 'up'
  */
 export type NoteTexture = 'solid' | 'liquid' | 'gem' | 'custom'
 
-export type StageBackgroundFit = 'cover' | 'contain' | 'stretch'
-export type StageBackgroundMode = 'color' | 'image'
-
 export type Settings = {
   // Theme — a single color the user can apply across notes / hit line /
   // particles / keyboard glow at once via the Inspector's "Apply to All"
@@ -191,14 +188,6 @@ export type Settings = {
   bloomSmoothing: number
   // Scene
   backgroundColor: string
-  // Project-level image displayed behind the 3D scene. The source bytes
-  // live in the standalone stage-background asset store; these settings
-  // only describe how that asset is presented. They are deliberately not
-  // keyframe-animatable.
-  backgroundMode: StageBackgroundMode
-  backgroundImageFit: StageBackgroundFit
-  backgroundImageOpacity: number
-  backgroundImageBrightness: number
   // Keyboard
   whiteKeyColor: string
   blackKeyColor: string
@@ -452,10 +441,6 @@ export const defaultSettings: Settings = {
   bloomRadius: 0.7,
   bloomSmoothing: 0.4,
   backgroundColor: '#05060a',
-  backgroundMode: 'color',
-  backgroundImageFit: 'cover',
-  backgroundImageOpacity: 1,
-  backgroundImageBrightness: 1,
   whiteKeyColor: '#f5f5f5',
   blackKeyColor: '#161616',
   woodColor: '#a87d38',
@@ -524,15 +509,11 @@ export type CustomTextureSnapshot = {
   fileName: string | null
 }
 
-/** Serialisable view of the standalone stage-background image store. */
-export type StageBackgroundSnapshot = CustomTextureSnapshot
-
 export type EditEntry =
   | { kind: 'song'; before: ParsedSong }
   | { kind: 'settings'; before: Settings }
   | { kind: 'projectName'; before: string }
   | { kind: 'customTexture'; before: CustomTextureSnapshot }
-  | { kind: 'stageBackground'; before: StageBackgroundSnapshot }
 
 // Bridge between the main store and the standalone `useCustomTexture`
 // store. Keeping a registration slot here (rather than importing the
@@ -548,16 +529,6 @@ export const registerCustomTextureBridge = (
 ): void => {
   customTextureGetter = getter
   customTextureRestorer = restorer
-}
-
-let stageBackgroundGetter: (() => StageBackgroundSnapshot) | null = null
-let stageBackgroundRestorer: ((snap: StageBackgroundSnapshot) => void) | null = null
-export const registerStageBackgroundBridge = (
-  getter: () => StageBackgroundSnapshot,
-  restorer: (snap: StageBackgroundSnapshot) => void,
-): void => {
-  stageBackgroundGetter = getter
-  stageBackgroundRestorer = restorer
 }
 
 // Module-level baseline + depth counter for in-flight settings gestures.
@@ -876,8 +847,6 @@ type AppState = {
    * change becomes Cmd+Z'able like any other settings edit.
    */
   pushCustomTextureSnapshot: (before: CustomTextureSnapshot) => void
-  /** Append a stage-background image snapshot to the undo stack. */
-  pushStageBackgroundSnapshot: (before: StageBackgroundSnapshot) => void
 
   // === Timeline pins (settings keyframes) =================================
   // Timeline-time (seconds) of the pin the Inspector is currently
@@ -1143,11 +1112,11 @@ export const useStore = create<AppState>((set) => ({
     // gestures already commit themselves; this is the safety net.
     endSettingsEdit()
     if (useStore.getState().editHistory.length > 0) track('undo')
-    // External-image restores are async (TextureLoader / ImageDecoder),
-    // so they are dispatched OUTSIDE set(): capture the current snapshot
-    // synchronously, swap stacks synchronously, then kick off the bridge
-    // restore which lands on the owning asset store when its promise
-    // resolves.
+    // Custom-texture restore is async (TextureLoader / ImageDecoder), so
+    // it's dispatched OUTSIDE set(): we capture the current snapshot
+    // synchronously, swap stacks synchronously, then kick off the
+    // bridge restore which lands on the customTexture store when its
+    // own promise resolves.
     {
       const peek = useStore.getState().editHistory
       if (peek.length > 0) {
@@ -1167,23 +1136,6 @@ export const useStore = create<AppState>((set) => ({
             dirty: true,
           }))
           customTextureRestorer?.(top.before)
-          return
-        }
-        if (top.kind === 'stageBackground') {
-          const snapshotNow = stageBackgroundGetter?.() ?? {
-            bytes: null,
-            mime: null,
-            fileName: null,
-          }
-          set((state) => ({
-            editHistory: state.editHistory.slice(0, -1),
-            editFuture: state.editFuture.concat({
-              kind: 'stageBackground',
-              before: snapshotNow,
-            }),
-            dirty: true,
-          }))
-          stageBackgroundRestorer?.(top.before)
           return
         }
       }
@@ -1242,7 +1194,9 @@ export const useStore = create<AppState>((set) => ({
           }),
         }
       }
-      // External image kinds are handled by the early-return block above.
+      // 'customTexture' is handled by the early-return block above; this
+      // path is unreachable but kept exhaustive for the discriminated
+      // union so future kinds force a compile error here.
       return state
     })
   },
@@ -1273,28 +1227,6 @@ export const useStore = create<AppState>((set) => ({
             }
           })
           customTextureRestorer?.(top.before)
-          return
-        }
-        if (top.kind === 'stageBackground') {
-          const snapshotNow = stageBackgroundGetter?.() ?? {
-            bytes: null,
-            mime: null,
-            fileName: null,
-          }
-          set((state) => {
-            const history = state.editHistory.concat({
-              kind: 'stageBackground',
-              before: snapshotNow,
-            })
-            if (history.length > HISTORY_LIMIT)
-              history.splice(0, history.length - HISTORY_LIMIT)
-            return {
-              editHistory: history,
-              editFuture: state.editFuture.slice(0, -1),
-              dirty: true,
-            }
-          })
-          stageBackgroundRestorer?.(top.before)
           return
         }
       }
@@ -1351,7 +1283,7 @@ export const useStore = create<AppState>((set) => ({
           }),
         }
       }
-      // External image kinds are handled by the early-return block above.
+      // 'customTexture' handled in the early-return block above.
       return state
     })
   },
@@ -1495,12 +1427,6 @@ export const useStore = create<AppState>((set) => ({
   pushCustomTextureSnapshot: (before) =>
     set((state) => {
       const history = state.editHistory.concat({ kind: 'customTexture', before })
-      if (history.length > HISTORY_LIMIT) history.splice(0, history.length - HISTORY_LIMIT)
-      return { editHistory: history, editFuture: [] }
-    }),
-  pushStageBackgroundSnapshot: (before) =>
-    set((state) => {
-      const history = state.editHistory.concat({ kind: 'stageBackground', before })
       if (history.length > HISTORY_LIMIT) history.splice(0, history.length - HISTORY_LIMIT)
       return { editHistory: history, editFuture: [] }
     }),
