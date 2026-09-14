@@ -78,6 +78,9 @@ export function pack(project: Project): Blob {
   const customTextureRef = project.customTexture
     ? `note-texture${extFromImageMime(project.customTexture.mime)}`
     : null
+  const stageBackgroundRef = project.stageBackground
+    ? `stage-background${extFromImageMime(project.stageBackground.mime)}`
+    : null
   const userAudioRef = project.userAudio
     ? `user-audio${extFromAudioMime(project.userAudio.mime)}`
     : null
@@ -94,6 +97,14 @@ export function pack(project: Project): Blob {
             ref: customTextureRef,
             mime: project.customTexture.mime,
             fileName: project.customTexture.fileName,
+          }
+        : null,
+    stageBackground:
+      project.stageBackground && stageBackgroundRef
+        ? {
+            ref: stageBackgroundRef,
+            mime: project.stageBackground.mime,
+            fileName: project.stageBackground.fileName,
           }
         : null,
     userAudio:
@@ -113,6 +124,9 @@ export function pack(project: Project): Blob {
   }
   if (project.customTexture && customTextureRef) {
     files[`assets/${customTextureRef}`] = new Uint8Array(project.customTexture.bytes)
+  }
+  if (project.stageBackground && stageBackgroundRef) {
+    files[`assets/${stageBackgroundRef}`] = new Uint8Array(project.stageBackground.bytes)
   }
   if (project.userAudio && userAudioRef) {
     files[`assets/${userAudioRef}`] = new Uint8Array(project.userAudio.bytes)
@@ -181,6 +195,20 @@ export async function unpack(buf: ArrayBuffer): Promise<Project> {
     // user can re-pick an image via the Inspector.
   }
 
+  let stageBackground: Project['stageBackground'] = null
+  if (manifest.stageBackground) {
+    const imageBytes = files[`assets/${manifest.stageBackground.ref}`]
+    if (imageBytes) {
+      stageBackground = {
+        bytes: detach(imageBytes),
+        mime: manifest.stageBackground.mime,
+        fileName: manifest.stageBackground.fileName,
+      }
+    }
+    // Missing background assets follow the same lenient policy as the
+    // note texture: the project remains usable with the solid colour.
+  }
+
   let userAudio: Project['userAudio'] = null
   if (manifest.userAudio) {
     const audioBytes = files[`assets/${manifest.userAudio.ref}`]
@@ -203,6 +231,7 @@ export async function unpack(buf: ArrayBuffer): Promise<Project> {
     settings: manifest.settings,
     songMidi,
     customTexture,
+    stageBackground,
     userAudio,
   }
 }
