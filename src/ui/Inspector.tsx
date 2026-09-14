@@ -329,8 +329,16 @@ function BackgroundImageControls() {
       {/* Same layout as the custom note-texture picker in
           `TextureControls`: button, then the chosen filename, then
           Clear — so both "bring your own image" rows read alike. */}
-      <SearchableBlock label={`${t('backgroundImage.title')} ${t('backgroundImage.chooseImage')}`}>
-        <div className="flex items-center gap-2 px-2 py-1">
+      <SearchableBlock label={t('backgroundImage.title')}>
+        {/* Named, so the button is not an unlabelled "Choose Image"
+            floating in the Scene section — and on its own line, because
+            label + button + filename + Clear do not fit across the
+            ~260px row without the filename crowding Clear. Same shape as
+            the EQ block. */}
+        <div className="select-none py-1 text-xs text-neutral-400">
+          {t('backgroundImage.title')}
+        </div>
+        <div className="flex items-center gap-2 pb-1">
           <FileTrigger
             acceptedFileTypes={[...STAGE_BACKGROUND_ACCEPTED_TYPES]}
             onSelect={async (event) => {
@@ -339,17 +347,22 @@ function BackgroundImageControls() {
               if (file) await chooseImage(file)
             }}
           >
-            <Button className="rounded bg-neutral-800 px-2 py-1 text-[10px] text-neutral-200 hover:bg-neutral-700">
+            <Button className="shrink-0 rounded bg-neutral-800 px-2 py-1 text-[10px] text-neutral-200 hover:bg-neutral-700">
               {t('backgroundImage.chooseImage')}
             </Button>
           </FileTrigger>
-          <span className="flex-1 truncate text-[10px] text-neutral-400">
+          {/* A long filename still truncates; the title attribute keeps
+              the whole of it reachable on hover. */}
+          <span
+            className="min-w-0 flex-1 truncate text-[10px] text-neutral-400"
+            title={fileName ?? undefined}
+          >
             {fileName ?? t('backgroundImage.noImage')}
           </span>
           {fileName && (
             <Button
               onPress={() => void setBackgroundFile(null)}
-              className="rounded px-1.5 py-0.5 text-[10px] text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300"
+              className="shrink-0 rounded px-1.5 py-0.5 text-[10px] text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300"
             >
               {t('backgroundImage.clear')}
             </Button>
