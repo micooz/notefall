@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useStore, defaultSettings, type Settings } from '../store'
 import {
@@ -43,6 +43,24 @@ function atomicUpdate(patch: Partial<Settings>): void {
   s.beginSettingsEdit()
   s.updateSettings(patch)
   s.endSettingsEdit()
+}
+
+// ── Sub-group ────────────────────────────────────────────────────────
+//
+// Rows that are parameters OF the control immediately above them — a
+// texture preset, a wave toggle, a glow toggle — rather than siblings of
+// it. Without the rule they sit at the same level as everything else in
+// the section and nothing says what they belong to.
+//
+// Section-level "Enabled" switches deliberately do NOT get one: the
+// section header already groups their rows, so wrapping the whole body
+// would add a rule and no information.
+//
+// Every child returns null when the Inspector's search filter excludes
+// it, at which point the wrapper collapses to zero height and the rule
+// goes with it instead of being left behind over empty space.
+function SubGroup({ children }: { children: ReactNode }) {
+  return <div className="ml-1 border-l border-neutral-800 pl-3">{children}</div>
 }
 
 // ── Camera section ───────────────────────────────────────────────────
@@ -239,65 +257,68 @@ function TextureControls() {
         onChange={(v) => atomicUpdate({ noteTexture: v })}
         defaultValue={def.noteTexture}
       />
-      {noteTexture === 'custom' && (
-        <div className="flex items-center gap-2 px-2 py-1">
-          <FileTrigger
-            acceptedFileTypes={['image/*']}
-            onSelect={async (e) => {
-              if (!e) return
-              const file = Array.from(e)[0]
-              if (file) await setCustomFile(file)
-            }}
-          >
-            <Button className="rounded bg-neutral-800 px-2 py-1 text-[10px] text-neutral-200 hover:bg-neutral-700">
-              {t('texture.chooseImage')}
-            </Button>
-          </FileTrigger>
-          <span className="flex-1 truncate text-[10px] text-neutral-400">
-            {customFileName ?? t('texture.noImage')}
-          </span>
-          {customFileName && (
-            <Button
-              onPress={() => setCustomFile(null)}
-              className="rounded px-1.5 py-0.5 text-[10px] text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300"
+      <SubGroup>
+        {noteTexture === 'custom' && (
+          <div className="flex items-center gap-2 px-2 py-1">
+            <FileTrigger
+              acceptedFileTypes={['image/*']}
+              onSelect={async (e) => {
+                if (!e) return
+                const file = Array.from(e)[0]
+                if (file) await setCustomFile(file)
+              }}
             >
-              {t('texture.clear')}
-            </Button>
-          )}
-        </div>
-      )}
-      {noteTexture !== 'solid' && (
-        <BoundSliderRow
-          label={t('texture.scale')}
-          settingKey="noteTextureScale"
-          min={0.01}
-          max={noteTexture === 'custom' ? 4 : 20}
-          step={0.01}
-        />
-      )}
-      {noteTexture !== 'solid' && (
-        <>
-          <BoundSliderRow label={t('texture.offsetX')} settingKey="noteTextureOffsetX" min={-3} max={3} step={0.01} />
-          <BoundSliderRow label={t('texture.offsetY')} settingKey="noteTextureOffsetY" min={-3} max={3} step={0.01} />
-        </>
-      )}
-      {noteTexture === 'custom' ? (
-        <>
-          <BoundSliderRow label={t('texture.animationSpeedX')} settingKey="noteAnimSpeedX" min={-3} max={3} step={0.05} />
-          <BoundSliderRow label={t('texture.animationSpeedY')} settingKey="noteAnimSpeedY" min={-3} max={3} step={0.05} />
-        </>
-      ) : noteTexture === 'liquid' || noteTexture === 'gem' ? (
-        <BoundSliderRow label={t('texture.animationSpeed')} settingKey="noteAnimSpeedY" min={0} max={3} step={0.05} />
-      ) : null}
-      {noteTexture === 'custom' && (
-        <>
-          <BoundSliderRow label={t('texture.blur')} settingKey="noteTextureBlur" min={0} max={6} step={0.05} />
-          <BoundSliderRow label={t('texture.perNoteVariation')} settingKey="noteTextureVariation" min={0} max={1} step={0.01} />
-        </>
-      )}
-      {noteTexture !== 'solid' && (
-        <BoundSliderRow label={t('texture.contrast')} settingKey="noteTextureContrast" min={0.3} max={20} step={0.1} />
-      )}
+              <Button className="rounded bg-neutral-800 px-2 py-1 text-[10px] text-neutral-200 hover:bg-neutral-700">
+                {t('texture.chooseImage')}
+              </Button>
+            </FileTrigger>
+            <span className="flex-1 truncate text-[10px] text-neutral-400">
+              {customFileName ?? t('texture.noImage')}
+            </span>
+            {customFileName && (
+              <Button
+                onPress={() => setCustomFile(null)}
+                className="rounded px-1.5 py-0.5 text-[10px] text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300"
+              >
+                {t('texture.clear')}
+              </Button>
+            )}
+          </div>
+        )}
+        {noteTexture !== 'solid' && (
+          <BoundSliderRow
+            label={t('texture.scale')}
+            settingKey="noteTextureScale"
+            min={0.01}
+            max={noteTexture === 'custom' ? 4 : 20}
+            step={0.01}
+          />
+        )}
+        {noteTexture !== 'solid' && (
+          <>
+            <BoundSliderRow label={t('texture.offsetX')} settingKey="noteTextureOffsetX" min={-3} max={3} step={0.01} />
+            <BoundSliderRow label={t('texture.offsetY')} settingKey="noteTextureOffsetY" min={-3} max={3} step={0.01} />
+          </>
+        )}
+        {noteTexture === 'custom' ? (
+          <>
+            <BoundSliderRow label={t('texture.animationSpeedX')} settingKey="noteAnimSpeedX" min={-3} max={3} step={0.05} />
+            <BoundSliderRow label={t('texture.animationSpeedY')} settingKey="noteAnimSpeedY" min={-3} max={3} step={0.05} />
+          </>
+        ) : noteTexture === 'liquid' || noteTexture === 'gem' ? (
+          <BoundSliderRow label={t('texture.animationSpeed')} settingKey="noteAnimSpeedY" min={0} max={3} step={0.05} />
+        ) : null}
+        {noteTexture === 'custom' && (
+          <>
+            <BoundSliderRow label={t('texture.blur')} settingKey="noteTextureBlur" min={0} max={6} step={0.05} />
+            <BoundSliderRow label={t('texture.perNoteVariation')} settingKey="noteTextureVariation" min={0} max={1} step={0.01} />
+          </>
+        )}
+        {noteTexture !== 'solid' && (
+          <BoundSliderRow label={t('texture.contrast')} settingKey="noteTextureContrast" min={0.3} max={20} step={0.1} />
+        )}
+      </SubGroup>
+
     </>
   )
 }
@@ -326,95 +347,105 @@ function BackgroundImageControls() {
 
   return (
     <>
-      {/* Same layout as the custom note-texture picker in
-          `TextureControls`: button, then the chosen filename, then
-          Clear — so both "bring your own image" rows read alike. */}
+      {/* Heading, then everything that belongs to the image indented
+          under a hairline rule. Without it the framing rows sat at the
+          same level as the background colour and the preview switch, so
+          nothing said they only apply to the image.
+
+          The rule lives on a wrapper whose children all return null when
+          the Inspector's search filter excludes them — the wrapper then
+          collapses to zero height and the rule goes with it, instead of
+          being left behind over empty space. */}
       <SearchableBlock label={t('backgroundImage.title')}>
-        {/* Named, so the button is not an unlabelled "Choose Image"
-            floating in the Scene section — and on its own line, because
-            label + button + filename + Clear do not fit across the
-            ~260px row without the filename crowding Clear. Same shape as
-            the EQ block. */}
+        {/* The label is on its own line: label + button + filename +
+            Clear do not fit across the ~260px row without the filename
+            crowding Clear. Same shape as the EQ block. */}
         <div className="select-none py-1 text-xs text-neutral-400">
           {t('backgroundImage.title')}
         </div>
-        <div className="flex items-center gap-2 pb-1">
-          <FileTrigger
-            acceptedFileTypes={[...STAGE_BACKGROUND_ACCEPTED_TYPES]}
-            onSelect={async (event) => {
-              if (!event) return
-              const file = Array.from(event)[0]
-              if (file) await chooseImage(file)
-            }}
-          >
-            <Button className="shrink-0 rounded bg-neutral-800 px-2 py-1 text-[10px] text-neutral-200 hover:bg-neutral-700">
-              {t('backgroundImage.chooseImage')}
-            </Button>
-          </FileTrigger>
-          {/* A long filename still truncates; the title attribute keeps
-              the whole of it reachable on hover. */}
-          <span
-            className="min-w-0 flex-1 truncate text-[10px] text-neutral-400"
-            title={fileName ?? undefined}
-          >
-            {fileName ?? t('backgroundImage.noImage')}
-          </span>
-          {fileName && (
-            <Button
-              onPress={() => void setBackgroundFile(null)}
-              className="shrink-0 rounded px-1.5 py-0.5 text-[10px] text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300"
-            >
-              {t('backgroundImage.clear')}
-            </Button>
-          )}
-        </div>
       </SearchableBlock>
-      {fileName && (
-        <>
-          <SelectRow
-            label={t('backgroundImage.fit')}
-            value={fit}
-            options={[
-              { value: 'cover', label: t('backgroundImage.cover') },
-              { value: 'contain', label: t('backgroundImage.contain') },
-              { value: 'stretch', label: t('backgroundImage.stretch') },
-            ]}
-            onChange={(value) => atomicUpdate({ backgroundImageFit: value })}
-            defaultValue={def.backgroundImageFit}
-          />
-          {/* Framing, mirroring the custom note texture's scale +
-              offset pair so both image sources are adjusted the same
-              way. Ranges match `noteTextureScale` / `noteTextureOffset*`. */}
-          <BoundSliderRow
-            label={t('backgroundImage.scale')}
-            settingKey="backgroundImageScale"
-            min={0.1}
-            max={4}
-            step={0.01}
-          />
-          <BoundSliderRow
-            label={t('backgroundImage.offsetX')}
-            settingKey="backgroundImageOffsetX"
-            min={-1}
-            max={1}
-            step={0.01}
-          />
-          <BoundSliderRow
-            label={t('backgroundImage.offsetY')}
-            settingKey="backgroundImageOffsetY"
-            min={-1}
-            max={1}
-            step={0.01}
-          />
-          <BoundSliderRow
-            label={t('backgroundImage.opacity')}
-            settingKey="backgroundImageOpacity"
-            min={0}
-            max={1}
-            step={0.01}
-          />
-        </>
-      )}
+      <SubGroup>
+        <SearchableBlock
+          label={`${t('backgroundImage.title')} ${t('backgroundImage.chooseImage')}`}
+        >
+          <div className="flex items-center gap-2 py-1">
+            <FileTrigger
+              acceptedFileTypes={[...STAGE_BACKGROUND_ACCEPTED_TYPES]}
+              onSelect={async (event) => {
+                if (!event) return
+                const file = Array.from(event)[0]
+                if (file) await chooseImage(file)
+              }}
+            >
+              <Button className="shrink-0 rounded bg-neutral-800 px-2 py-1 text-[10px] text-neutral-200 hover:bg-neutral-700">
+                {t('backgroundImage.chooseImage')}
+              </Button>
+            </FileTrigger>
+            {/* A long filename still truncates; the title attribute keeps
+                the whole of it reachable on hover. */}
+            <span
+              className="min-w-0 flex-1 truncate text-[10px] text-neutral-400"
+              title={fileName ?? undefined}
+            >
+              {fileName ?? t('backgroundImage.noImage')}
+            </span>
+            {fileName && (
+              <Button
+                onPress={() => void setBackgroundFile(null)}
+                className="shrink-0 rounded px-1.5 py-0.5 text-[10px] text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300"
+              >
+                {t('backgroundImage.clear')}
+              </Button>
+            )}
+          </div>
+        </SearchableBlock>
+        {fileName && (
+          <>
+            <SelectRow
+              label={t('backgroundImage.fit')}
+              value={fit}
+              options={[
+                { value: 'cover', label: t('backgroundImage.cover') },
+                { value: 'contain', label: t('backgroundImage.contain') },
+                { value: 'stretch', label: t('backgroundImage.stretch') },
+              ]}
+              onChange={(value) => atomicUpdate({ backgroundImageFit: value })}
+              defaultValue={def.backgroundImageFit}
+            />
+            {/* Framing, mirroring the custom note texture's scale +
+                offset pair so both image sources are adjusted the same
+                way. Ranges match `noteTextureScale` / `noteTextureOffset*`. */}
+            <BoundSliderRow
+              label={t('backgroundImage.scale')}
+              settingKey="backgroundImageScale"
+              min={0.1}
+              max={4}
+              step={0.01}
+            />
+            <BoundSliderRow
+              label={t('backgroundImage.offsetX')}
+              settingKey="backgroundImageOffsetX"
+              min={-1}
+              max={1}
+              step={0.01}
+            />
+            <BoundSliderRow
+              label={t('backgroundImage.offsetY')}
+              settingKey="backgroundImageOffsetY"
+              min={-1}
+              max={1}
+              step={0.01}
+            />
+            <BoundSliderRow
+              label={t('backgroundImage.opacity')}
+              settingKey="backgroundImageOpacity"
+              min={0}
+              max={1}
+              step={0.01}
+            />
+          </>
+        )}
+      </SubGroup>
     </>
   )
 }
@@ -693,15 +724,17 @@ export function Inspector() {
           <BoundSliderRow label={t('row.barThickness')} settingKey="hitLineThickness" min={0} max={1} step={0.01} />
           <BoundSliderRow label={t('row.barHalo')} settingKey="hitLineBarHalo" min={0} max={6} step={0.05} />
           <BoundSwitchRow label={t('row.waveEnabled')} settingKey="hitLineWaveEnabled" />
-          <BoundSliderRow label={t('row.waveIntensity')} settingKey="hitLineWaveIntensity" min={0} max={4} step={0.05} />
-          <BoundSliderRow label={t('row.waveY')} settingKey="hitLineWaveY" min={-1} max={1} step={0.01} />
-          <BoundSliderRow label={t('row.waveAmplitude')} settingKey="hitLineWaveAmplitude" min={0} max={1} step={0.01} />
-          <BoundSliderRow label={t('row.waveScale')} settingKey="hitLineWaveScale" min={0.5} max={200} step={0.5} />
-          <BoundSliderRow label={t('row.waveScrollSpeed')} settingKey="hitLineWaveScrollSpeed" min={-3} max={3} step={0.05} />
-          <BoundSliderRow label={t('row.waveMorphSpeed')} settingKey="hitLineWaveMorphSpeed" min={0} max={3} step={0.05} />
-          <BoundSliderRow label={t('row.waveThickness')} settingKey="hitLineWaveThickness" min={0} max={0.2} step={0.005} />
-          <BoundSliderRow label={t('row.waveHalo')} settingKey="hitLineWaveHalo" min={0} max={3} step={0.05} />
-          <BoundSliderRow label={t('row.waveGrain')} settingKey="hitLineWaveGrain" min={0} max={3} step={0.05} />
+          <SubGroup>
+            <BoundSliderRow label={t('row.waveIntensity')} settingKey="hitLineWaveIntensity" min={0} max={4} step={0.05} />
+            <BoundSliderRow label={t('row.waveY')} settingKey="hitLineWaveY" min={-1} max={1} step={0.01} />
+            <BoundSliderRow label={t('row.waveAmplitude')} settingKey="hitLineWaveAmplitude" min={0} max={1} step={0.01} />
+            <BoundSliderRow label={t('row.waveScale')} settingKey="hitLineWaveScale" min={0.5} max={200} step={0.5} />
+            <BoundSliderRow label={t('row.waveScrollSpeed')} settingKey="hitLineWaveScrollSpeed" min={-3} max={3} step={0.05} />
+            <BoundSliderRow label={t('row.waveMorphSpeed')} settingKey="hitLineWaveMorphSpeed" min={0} max={3} step={0.05} />
+            <BoundSliderRow label={t('row.waveThickness')} settingKey="hitLineWaveThickness" min={0} max={0.2} step={0.005} />
+            <BoundSliderRow label={t('row.waveHalo')} settingKey="hitLineWaveHalo" min={0} max={3} step={0.05} />
+            <BoundSliderRow label={t('row.waveGrain')} settingKey="hitLineWaveGrain" min={0} max={3} step={0.05} />
+          </SubGroup>
         </Section>
 
         {/* Bloom is a global post-process applied AFTER all the visual
@@ -735,10 +768,12 @@ export function Inspector() {
           <BoundColorRow label={t('row.blackKeys')} settingKey="blackKeyColor" />
           <BoundColorRow label={t('row.wood')} settingKey="woodColor" />
           <BoundSwitchRow label={t('row.glowEnabled')} settingKey="keyGlowEnabled" />
-          <BoundSwitchRow label={t('row.glowFollowsNote')} settingKey="keyGlowFollowNote" />
-          <GlowColorRow />
-          <BoundSliderRow label={t('row.glowIntensity')} settingKey="keyGlowIntensity" min={0} max={5} step={0.05} />
-          <BoundSliderRow label={t('row.glowDecay')} settingKey="keyGlowDecay" min={0.05} max={2} step={0.01} />
+          <SubGroup>
+            <BoundSwitchRow label={t('row.glowFollowsNote')} settingKey="keyGlowFollowNote" />
+            <GlowColorRow />
+            <BoundSliderRow label={t('row.glowIntensity')} settingKey="keyGlowIntensity" min={0} max={5} step={0.05} />
+            <BoundSliderRow label={t('row.glowDecay')} settingKey="keyGlowDecay" min={0.05} max={2} step={0.01} />
+          </SubGroup>
         </Section>
 
         <Section title={t('section.audio')}>
