@@ -135,8 +135,6 @@
   },
   "backgroundImage": {
     "title": "Background Image",
-    "modeColor": "Color",
-    "modeImage": "Image",
     "selectColor": "Background Color",
     "chooseImage": "Choose Image",
     "noImage": "No image",
@@ -149,7 +147,6 @@
     "offsetX": "Offset X",
     "offsetY": "Offset Y",
     "opacity": "Opacity",
-    "brightness": "Brightness",
     "loadErrorTitle": "Could not load background image",
     "loadErrorMessage": "\"{{name}}\" could not be decoded.\n\n{{detail}}"
   },

@@ -35,7 +35,6 @@ export type FallDirection = 'down' | 'up'
 export type NoteTexture = 'solid' | 'liquid' | 'gem' | 'custom'
 
 export type StageBackgroundFit = 'cover' | 'contain' | 'stretch'
-export type StageBackgroundMode = 'color' | 'image'
 
 export type Settings = {
   // Theme — a single color the user can apply across notes / hit line /
@@ -195,10 +194,8 @@ export type Settings = {
   // live in the standalone stage-background asset store; these settings
   // only describe how that asset is presented. They are deliberately not
   // keyframe-animatable.
-  backgroundMode: StageBackgroundMode
   backgroundImageFit: StageBackgroundFit
   backgroundImageOpacity: number
-  backgroundImageBrightness: number
   // Framing of the background image on top of the fit mode: zoom factor
   // (1 = fit exactly) and pan, both in normalised image units. Mirrors
   // the `noteTextureScale` / `noteTextureOffset*` trio the custom note
@@ -459,10 +456,8 @@ export const defaultSettings: Settings = {
   bloomRadius: 0.7,
   bloomSmoothing: 0.4,
   backgroundColor: '#05060a',
-  backgroundMode: 'color',
   backgroundImageFit: 'cover',
   backgroundImageOpacity: 1,
-  backgroundImageBrightness: 1,
   backgroundImageScale: 1,
   backgroundImageOffsetX: 0,
   backgroundImageOffsetY: 0,

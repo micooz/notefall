@@ -20,7 +20,6 @@ uniform vec3 uBackgroundColor;
 uniform float uImageAspect;
 uniform float uViewportAspect;
 uniform float uOpacity;
-uniform float uBrightness;
 uniform int uFitMode;
 uniform float uScale;
 uniform vec2 uOffset;
@@ -57,8 +56,7 @@ void main() {
 
   vec4 texel = texture2D(uImage, uv);
   float imageAlpha = clamp(texel.a * uOpacity, 0.0, 1.0);
-  vec3 imageRgb = texel.rgb * uBrightness;
-  gl_FragColor = vec4(mix(uBackgroundColor, imageRgb, imageAlpha), 1.0);
+  gl_FragColor = vec4(mix(uBackgroundColor, texel.rgb, imageAlpha), 1.0);
 
   #include <colorspace_fragment>
 }
@@ -73,10 +71,8 @@ void main() {
 export function StageBackground() {
   const texture = useStageBackground((state) => state.texture)
   const imageAspect = useStageBackground((state) => state.imageAspect)
-  const backgroundMode = useStore((state) => state.settings.backgroundMode)
   const fit = useStore((state) => state.settings.backgroundImageFit)
   const opacity = useStore((state) => state.settings.backgroundImageOpacity)
-  const brightness = useStore((state) => state.settings.backgroundImageBrightness)
   const scale = useStore((state) => state.settings.backgroundImageScale)
   const offsetX = useStore((state) => state.settings.backgroundImageOffsetX)
   const offsetY = useStore((state) => state.settings.backgroundImageOffsetY)
@@ -91,7 +87,6 @@ export function StageBackground() {
           uImageAspect: { value: 1 },
           uViewportAspect: { value: 1 },
           uOpacity: { value: 1 },
-          uBrightness: { value: 1 },
           uFitMode: { value: 0 },
           uScale: { value: 1 },
           uOffset: { value: new THREE.Vector2() },
@@ -113,7 +108,6 @@ export function StageBackground() {
   material.uniforms.uImage.value = texture
   material.uniforms.uImageAspect.value = imageAspect
   material.uniforms.uOpacity.value = opacity
-  material.uniforms.uBrightness.value = brightness
   material.uniforms.uFitMode.value = fit === 'cover' ? 0 : fit === 'contain' ? 1 : 2
   material.uniforms.uScale.value = scale
   material.uniforms.uOffset.value.set(offsetX, offsetY)
@@ -125,7 +119,7 @@ export function StageBackground() {
     material.uniforms.uBackgroundColor.value.copy(background)
   })
 
-  if (!texture || backgroundMode !== 'image') return null
+  if (!texture) return null
 
   return (
     <mesh renderOrder={-1000} frustumCulled={false}>

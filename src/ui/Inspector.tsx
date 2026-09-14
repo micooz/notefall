@@ -12,20 +12,10 @@ import {
   SelectRow,
   SliderRow,
   VerticalSliderBands,
-  rowMatchesQuery,
   useEffectiveSetting,
-  useSearchQuery,
 } from './controls'
 import { VelocityCurveEditor } from './VelocityCurveEditor'
-import {
-  Button,
-  FileTrigger,
-  OverlayArrow,
-  Radio,
-  RadioGroup,
-  Tooltip,
-  TooltipTrigger,
-} from 'react-aria-components'
+import { Button, FileTrigger, OverlayArrow, Tooltip, TooltipTrigger } from 'react-aria-components'
 import { useCustomTexture } from '../notes/customTexture'
 import { CAMERA_LIMITS } from '../scene/cameraLimits'
 import {
@@ -313,50 +303,6 @@ function TextureControls() {
 }
 
 // ── Scene: project-level background image ───────────────────────────
-function BackgroundModeRow() {
-  const { t } = useTranslation('inspector')
-  const mode = useStore((state) => state.settings.backgroundMode)
-  // Same shape as every other Bound* row: drop out of the Inspector's
-  // search results when the label doesn't match, and let a double-click
-  // on the label restore the default.
-  const label = t('row.background')
-  const q = useSearchQuery()
-  if (!rowMatchesQuery(label, q)) return null
-  const reset = () => atomicUpdate({ backgroundMode: def.backgroundMode })
-  return (
-    <div data-search-label={label} className="flex items-center justify-between py-1 text-xs">
-      <span
-        className="cursor-pointer select-none text-neutral-400"
-        onDoubleClick={reset}
-        title={t('reset.doubleClickReset')}
-      >
-        {label}
-      </span>
-      <RadioGroup
-        orientation="horizontal"
-        value={mode}
-        onChange={(value) =>
-          atomicUpdate({ backgroundMode: value as 'color' | 'image' })
-        }
-        className="relative flex w-32 rounded border border-neutral-700 bg-neutral-950 p-0.5"
-      >
-        <Radio
-          value="color"
-          className="flex-1 cursor-pointer rounded px-2 py-1 text-center text-[10px] outline-none transition-colors data-[selected]:bg-sky-500/15 data-[selected]:text-sky-200 data-[focused]:ring-1 data-[focused]:ring-sky-500/40 [&:not([data-selected])]:text-neutral-400 [&:not([data-selected])]:hover:text-neutral-200"
-        >
-          {t('backgroundImage.modeColor')}
-        </Radio>
-        <Radio
-          value="image"
-          className="flex-1 cursor-pointer rounded px-2 py-1 text-center text-[10px] outline-none transition-colors data-[selected]:bg-sky-500/15 data-[selected]:text-sky-200 data-[focused]:ring-1 data-[focused]:ring-sky-500/40 [&:not([data-selected])]:text-neutral-400 [&:not([data-selected])]:hover:text-neutral-200"
-        >
-          {t('backgroundImage.modeImage')}
-        </Radio>
-      </RadioGroup>
-    </div>
-  )
-}
-
 function BackgroundImageControls() {
   const { t } = useTranslation('inspector')
   const fileName = useStageBackground((state) => state.fileName)
@@ -452,13 +398,6 @@ function BackgroundImageControls() {
             settingKey="backgroundImageOpacity"
             min={0}
             max={1}
-            step={0.01}
-          />
-          <BoundSliderRow
-            label={t('backgroundImage.brightness')}
-            settingKey="backgroundImageBrightness"
-            min={0}
-            max={2}
             step={0.01}
           />
         </>
@@ -602,7 +541,6 @@ function PinEditingBanner() {
 export function Inspector() {
   const { t } = useTranslation('inspector')
   const reset = useStore((st) => st.resetSettings)
-  const backgroundMode = useStore((state) => state.settings.backgroundMode)
   const [query, setQuery] = useState('')
 
   return (
@@ -765,20 +703,16 @@ export function Inspector() {
         </Section>
 
         <Section title={t('section.scene')}>
-          <BackgroundModeRow />
-          {/* Sub-settings are listed flat, the way `TextureControls`
-              gates its rows on `noteTexture`. An indented wrapper would
-              be the only one in the Inspector, and it would leave a
-              stray rule behind whenever the search filter hides its
-              contents. */}
-          {backgroundMode === 'color' ? (
-            <BoundColorRow
-              label={t('backgroundImage.selectColor')}
-              settingKey="backgroundColor"
-            />
-          ) : (
-            <BackgroundImageControls />
-          )}
+          {/* Colour and image are siblings, not alternatives: the image
+              composites OVER the colour, which still shows through at
+              opacity < 1 and in whatever the fit / scale / offset leaves
+              uncovered. The framing rows appear only once an image is
+              loaded, the way `TextureControls` gates its rows. */}
+          <BoundColorRow
+            label={t('backgroundImage.selectColor')}
+            settingKey="backgroundColor"
+          />
+          <BackgroundImageControls />
           <BoundSwitchRow label={t('row.highFpsPreview')} settingKey="previewHighFps" />
         </Section>
 
