@@ -577,6 +577,7 @@ type ColorRowProps = {
   label: string
   value: string
   onChange: (v: string) => void
+  className?: string
   /** Double-clicking the label resets to this. */
   defaultValue?: string
   /**
@@ -602,6 +603,7 @@ export function ColorRow({
   label,
   value,
   onChange,
+  className,
   defaultValue,
   onReset,
   isModified: isModifiedOverride,
@@ -627,7 +629,10 @@ export function ColorRow({
   const q = useSearchQuery()
   if (!rowMatchesQuery(label, q)) return null
   return (
-    <div data-search-label={label} className="flex items-center justify-between py-1 text-xs">
+    <div
+      data-search-label={label}
+      className={`flex items-center justify-between py-1 text-xs ${className ?? ''}`}
+    >
       <span
         className={`text-neutral-400 select-none ${reset ? 'cursor-pointer' : ''}`}
         onDoubleClick={reset}
@@ -1102,9 +1107,11 @@ export function BoundSwitchRow({
 export function BoundColorRow({
   label,
   settingKey,
+  className,
 }: {
   label: string
   settingKey: StringKeys
+  className?: string
 }) {
   const value = useEffectiveSetting(settingKey) as string
   return (
@@ -1113,6 +1120,7 @@ export function BoundColorRow({
       value={value}
       onChange={(v) => writeSetting(settingKey, v as Settings[StringKeys])}
       defaultValue={defaultSettings[settingKey] as string}
+      className={className}
     />
   )
 }
