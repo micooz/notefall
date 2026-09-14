@@ -12,7 +12,9 @@ import {
   SelectRow,
   SliderRow,
   VerticalSliderBands,
+  rowMatchesQuery,
   useEffectiveSetting,
+  useSearchQuery,
 } from './controls'
 import { VelocityCurveEditor } from './VelocityCurveEditor'
 import {
@@ -314,9 +316,22 @@ function TextureControls() {
 function BackgroundModeRow() {
   const { t } = useTranslation('inspector')
   const mode = useStore((state) => state.settings.backgroundMode)
+  // Same shape as every other Bound* row: drop out of the Inspector's
+  // search results when the label doesn't match, and let a double-click
+  // on the label restore the default.
+  const label = t('row.background')
+  const q = useSearchQuery()
+  if (!rowMatchesQuery(label, q)) return null
+  const reset = () => atomicUpdate({ backgroundMode: def.backgroundMode })
   return (
-    <div data-search-label={t('row.background')} className="flex items-center justify-between py-1 text-xs">
-      <span className="select-none text-neutral-400">{t('row.background')}</span>
+    <div data-search-label={label} className="flex items-center justify-between py-1 text-xs">
+      <span
+        className="cursor-pointer select-none text-neutral-400"
+        onDoubleClick={reset}
+        title={t('reset.doubleClickReset')}
+      >
+        {label}
+      </span>
       <RadioGroup
         orientation="horizontal"
         value={mode}
@@ -365,33 +380,34 @@ function BackgroundImageControls() {
 
   return (
     <>
-      <SearchableBlock label={`${t('backgroundImage.title')} ${t('backgroundImage.selectImage')}`}>
-        <div className="flex h-8 items-center justify-between gap-2 text-xs">
-          <span className="shrink-0 select-none text-neutral-400">
-            {t('backgroundImage.selectImage')}
+      {/* Same layout as the custom note-texture picker in
+          `TextureControls`: button, then the chosen filename, then
+          Clear — so both "bring your own image" rows read alike. */}
+      <SearchableBlock label={`${t('backgroundImage.title')} ${t('backgroundImage.chooseImage')}`}>
+        <div className="flex items-center gap-2 px-2 py-1">
+          <FileTrigger
+            acceptedFileTypes={[...STAGE_BACKGROUND_ACCEPTED_TYPES]}
+            onSelect={async (event) => {
+              if (!event) return
+              const file = Array.from(event)[0]
+              if (file) await chooseImage(file)
+            }}
+          >
+            <Button className="rounded bg-neutral-800 px-2 py-1 text-[10px] text-neutral-200 hover:bg-neutral-700">
+              {t('backgroundImage.chooseImage')}
+            </Button>
+          </FileTrigger>
+          <span className="flex-1 truncate text-[10px] text-neutral-400">
+            {fileName ?? t('backgroundImage.noImage')}
           </span>
-          <div className="flex min-w-0 items-center justify-end gap-1">
-            <FileTrigger
-              acceptedFileTypes={[...STAGE_BACKGROUND_ACCEPTED_TYPES]}
-              onSelect={async (event) => {
-                if (!event) return
-                const file = Array.from(event)[0]
-                if (file) await chooseImage(file)
-              }}
+          {fileName && (
+            <Button
+              onPress={() => void setBackgroundFile(null)}
+              className="rounded px-1.5 py-0.5 text-[10px] text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300"
             >
-              <Button className="shrink-0 rounded bg-neutral-800 px-2 py-1 text-[10px] text-neutral-200 hover:bg-neutral-700">
-                {t('backgroundImage.chooseImage')}
-              </Button>
-            </FileTrigger>
-            {fileName && (
-              <Button
-                onPress={() => void setBackgroundFile(null)}
-                className="shrink-0 rounded px-1.5 py-0.5 text-[10px] text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300"
-              >
-                {t('backgroundImage.clear')}
-              </Button>
-            )}
-          </div>
+              {t('backgroundImage.clear')}
+            </Button>
+          )}
         </div>
       </SearchableBlock>
       {fileName && (
@@ -406,6 +422,30 @@ function BackgroundImageControls() {
             ]}
             onChange={(value) => atomicUpdate({ backgroundImageFit: value })}
             defaultValue={def.backgroundImageFit}
+          />
+          {/* Framing, mirroring the custom note texture's scale +
+              offset pair so both image sources are adjusted the same
+              way. Ranges match `noteTextureScale` / `noteTextureOffset*`. */}
+          <BoundSliderRow
+            label={t('backgroundImage.scale')}
+            settingKey="backgroundImageScale"
+            min={0.1}
+            max={4}
+            step={0.01}
+          />
+          <BoundSliderRow
+            label={t('backgroundImage.offsetX')}
+            settingKey="backgroundImageOffsetX"
+            min={-1}
+            max={1}
+            step={0.01}
+          />
+          <BoundSliderRow
+            label={t('backgroundImage.offsetY')}
+            settingKey="backgroundImageOffsetY"
+            min={-1}
+            max={1}
+            step={0.01}
           />
           <BoundSliderRow
             label={t('backgroundImage.opacity')}
@@ -726,21 +766,19 @@ export function Inspector() {
 
         <Section title={t('section.scene')}>
           <BackgroundModeRow />
-          <div
-            role="group"
-            aria-label={t('row.background')}
-            className="ml-3 border-l border-neutral-800 pl-3"
-          >
-            {backgroundMode === 'color' ? (
-              <BoundColorRow
-                label={t('backgroundImage.selectColor')}
-                settingKey="backgroundColor"
-                className="h-8 py-0"
-              />
-            ) : (
-              <BackgroundImageControls />
-            )}
-          </div>
+          {/* Sub-settings are listed flat, the way `TextureControls`
+              gates its rows on `noteTexture`. An indented wrapper would
+              be the only one in the Inspector, and it would leave a
+              stray rule behind whenever the search filter hides its
+              contents. */}
+          {backgroundMode === 'color' ? (
+            <BoundColorRow
+              label={t('backgroundImage.selectColor')}
+              settingKey="backgroundColor"
+            />
+          ) : (
+            <BackgroundImageControls />
+          )}
           <BoundSwitchRow label={t('row.highFpsPreview')} settingKey="previewHighFps" />
         </Section>
 

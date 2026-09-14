@@ -199,6 +199,13 @@ export type Settings = {
   backgroundImageFit: StageBackgroundFit
   backgroundImageOpacity: number
   backgroundImageBrightness: number
+  // Framing of the background image on top of the fit mode: zoom factor
+  // (1 = fit exactly) and pan, both in normalised image units. Mirrors
+  // the `noteTextureScale` / `noteTextureOffset*` trio the custom note
+  // texture already offers.
+  backgroundImageScale: number
+  backgroundImageOffsetX: number
+  backgroundImageOffsetY: number
   // Keyboard
   whiteKeyColor: string
   blackKeyColor: string
@@ -456,6 +463,9 @@ export const defaultSettings: Settings = {
   backgroundImageFit: 'cover',
   backgroundImageOpacity: 1,
   backgroundImageBrightness: 1,
+  backgroundImageScale: 1,
+  backgroundImageOffsetX: 0,
+  backgroundImageOffsetY: 0,
   whiteKeyColor: '#f5f5f5',
   blackKeyColor: '#161616',
   woodColor: '#a87d38',

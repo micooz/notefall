@@ -22,6 +22,8 @@ uniform float uViewportAspect;
 uniform float uOpacity;
 uniform float uBrightness;
 uniform int uFitMode;
+uniform float uScale;
+uniform vec2 uOffset;
 
 varying vec2 vUv;
 
@@ -42,8 +44,16 @@ void main() {
     } else {
       uv.y = (vUv.y - 0.5) * (uImageAspect / uViewportAspect) + 0.5;
     }
-    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) discard;
   }
+
+  // Framing, applied after the fit so zoom and pan read the same way in
+  // every fit mode: scale > 1 samples a smaller window (zoom in), and a
+  // positive offset slides the image right / up. Sampling outside the
+  // image is discarded rather than clamped, so panning or zooming out
+  // reveals the background colour instead of smearing the edge pixel —
+  // the same thing the contain letterbox already did.
+  uv = (uv - 0.5) / max(uScale, 0.0001) + 0.5 - uOffset;
+  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) discard;
 
   vec4 texel = texture2D(uImage, uv);
   float imageAlpha = clamp(texel.a * uOpacity, 0.0, 1.0);
@@ -67,6 +77,9 @@ export function StageBackground() {
   const fit = useStore((state) => state.settings.backgroundImageFit)
   const opacity = useStore((state) => state.settings.backgroundImageOpacity)
   const brightness = useStore((state) => state.settings.backgroundImageBrightness)
+  const scale = useStore((state) => state.settings.backgroundImageScale)
+  const offsetX = useStore((state) => state.settings.backgroundImageOffsetX)
+  const offsetY = useStore((state) => state.settings.backgroundImageOffsetY)
   const gl = useThree((state) => state.gl)
 
   const material = useMemo(
@@ -80,6 +93,8 @@ export function StageBackground() {
           uOpacity: { value: 1 },
           uBrightness: { value: 1 },
           uFitMode: { value: 0 },
+          uScale: { value: 1 },
+          uOffset: { value: new THREE.Vector2() },
         },
         vertexShader,
         fragmentShader,
@@ -100,6 +115,8 @@ export function StageBackground() {
   material.uniforms.uOpacity.value = opacity
   material.uniforms.uBrightness.value = brightness
   material.uniforms.uFitMode.value = fit === 'cover' ? 0 : fit === 'contain' ? 1 : 2
+  material.uniforms.uScale.value = scale
+  material.uniforms.uOffset.value.set(offsetX, offsetY)
 
   useFrame(() => {
     gl.getDrawingBufferSize(size)
