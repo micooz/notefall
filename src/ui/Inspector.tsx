@@ -7,6 +7,7 @@ import {
   BoundSwitchRow,
   ColorRow,
   SearchableBlock,
+  SearchGroup,
   SearchProvider,
   Section,
   SelectRow,
@@ -59,8 +60,16 @@ function atomicUpdate(patch: Partial<Settings>): void {
 // Every child returns null when the Inspector's search filter excludes
 // it, at which point the wrapper collapses to zero height and the rule
 // goes with it instead of being left behind over empty space.
-function SubGroup({ children }: { children: ReactNode }) {
-  return <div className="ml-1 border-l border-neutral-800 pl-3">{children}</div>
+// `label` names the parent control. Rows inside drop the redundant
+// prefix from what they display — "Intensity" under a Glow toggle, not
+// "Glow Intensity" — and `SearchGroup` folds the name back in for the
+// Inspector's search, so typing "glow" still finds every row under it.
+function SubGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="ml-1 border-l border-neutral-800 pl-3">
+      <SearchGroup label={label}>{children}</SearchGroup>
+    </div>
+  )
 }
 
 // ── Camera section ───────────────────────────────────────────────────
@@ -257,7 +266,7 @@ function TextureControls() {
         onChange={(v) => atomicUpdate({ noteTexture: v })}
         defaultValue={def.noteTexture}
       />
-      <SubGroup>
+      <SubGroup label={t('texture.texture')}>
         {noteTexture === 'custom' && (
           <div className="flex items-center gap-2 px-2 py-1">
             <FileTrigger
@@ -364,7 +373,7 @@ function BackgroundImageControls() {
           {t('backgroundImage.title')}
         </div>
       </SearchableBlock>
-      <SubGroup>
+      <SubGroup label={t('backgroundImage.title')}>
         <SearchableBlock
           label={`${t('backgroundImage.title')} ${t('backgroundImage.chooseImage')}`}
         >
@@ -732,7 +741,7 @@ export function Inspector() {
           <BoundSliderRow label={t('row.barThickness')} settingKey="hitLineThickness" min={0} max={1} step={0.01} />
           <BoundSliderRow label={t('row.barHalo')} settingKey="hitLineBarHalo" min={0} max={6} step={0.05} />
           <BoundSwitchRow label={t('row.waveEnabled')} settingKey="hitLineWaveEnabled" />
-          <SubGroup>
+          <SubGroup label={t('row.waveEnabled')}>
             <BoundSliderRow label={t('row.waveIntensity')} settingKey="hitLineWaveIntensity" min={0} max={4} step={0.05} />
             <BoundSliderRow label={t('row.waveY')} settingKey="hitLineWaveY" min={-1} max={1} step={0.01} />
             <BoundSliderRow label={t('row.waveAmplitude')} settingKey="hitLineWaveAmplitude" min={0} max={1} step={0.01} />
@@ -776,7 +785,7 @@ export function Inspector() {
           <BoundColorRow label={t('row.blackKeys')} settingKey="blackKeyColor" />
           <BoundColorRow label={t('row.wood')} settingKey="woodColor" />
           <BoundSwitchRow label={t('row.glowEnabled')} settingKey="keyGlowEnabled" />
-          <SubGroup>
+          <SubGroup label={t('row.glowEnabled')}>
             <BoundSwitchRow label={t('row.glowFollowsNote')} settingKey="keyGlowFollowNote" />
             <GlowColorRow />
             <BoundSliderRow label={t('row.glowIntensity')} settingKey="keyGlowIntensity" min={0} max={5} step={0.05} />

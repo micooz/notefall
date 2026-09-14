@@ -102,9 +102,39 @@ export function useSearchQuery(): string {
   return useContext(SearchContext)
 }
 
+// Name of the control a `SearchGroup`'s rows hang off. Rows inside a
+// group drop the redundant prefix from what they DISPLAY — "Intensity"
+// under a Glow toggle, not "Glow Intensity" — so the group name is kept
+// here and folded back in for MATCHING. Searching "glow" still finds
+// every row under it.
+const SearchGroupContext = createContext<string>('')
+
+export function SearchGroup({
+  label,
+  children,
+}: {
+  label: string
+  children: ReactNode
+}) {
+  return (
+    <SearchGroupContext.Provider value={label}>
+      {children}
+    </SearchGroupContext.Provider>
+  )
+}
+
 export function rowMatchesQuery(label: string, query: string): boolean {
   if (!query) return true
   return label.toLowerCase().includes(query)
+}
+
+/** `rowMatchesQuery` widened by the enclosing `SearchGroup`'s name. */
+export function useRowMatchesQuery(label: string): boolean {
+  const query = useSearchQuery()
+  const group = useContext(SearchGroupContext)
+  if (!query) return true
+  const haystack = group ? `${group} ${label}` : label
+  return haystack.toLowerCase().includes(query)
 }
 
 /**
@@ -121,8 +151,7 @@ export function SearchableBlock({
   label: string
   children: ReactNode
 }) {
-  const q = useSearchQuery()
-  if (!rowMatchesQuery(label, q)) return null
+  if (!useRowMatchesQuery(label)) return null
   return <div data-search-label={label}>{children}</div>
 }
 
@@ -446,7 +475,7 @@ type SliderRowProps = {
 }
 
 export function SliderRow({ label, value, min, max, step = 0.01, onChange, format, defaultValue }: SliderRowProps) {
-  const q = useSearchQuery()
+  const visible = useRowMatchesQuery(label)
   const { ref: trackRef, menuNode } = useSliderTrackGestures({
     value,
     min,
@@ -462,7 +491,7 @@ export function SliderRow({ label, value, min, max, step = 0.01, onChange, forma
   // both pointer release AND keyboard arrows, so each press of an arrow
   // key also commits as its own entry.
   const gestureOpen = useRef(false)
-  if (!rowMatchesQuery(label, q)) return null
+  if (!visible) return null
   return (
     <Slider
       data-search-label={label}
@@ -535,8 +564,7 @@ type SwitchRowProps = {
 
 export function SwitchRow({ label, value, onChange, defaultValue }: SwitchRowProps) {
   const { t } = useTranslation('inspector')
-  const q = useSearchQuery()
-  if (!rowMatchesQuery(label, q)) return null
+  if (!useRowMatchesQuery(label)) return null
   return (
     <Switch
       data-search-label={label}
@@ -624,8 +652,7 @@ export function ColorRow({
       ? isModifiedOverride
       : defaultValue !== undefined &&
         value.toLowerCase() !== defaultValue.toLowerCase()
-  const q = useSearchQuery()
-  if (!rowMatchesQuery(label, q)) return null
+  if (!useRowMatchesQuery(label)) return null
   return (
     <div data-search-label={label} className="flex items-center justify-between py-1 text-xs">
       <span
@@ -729,8 +756,7 @@ export function SelectRow<T extends string>({ label, value, options, onChange, d
     defaultValue !== undefined
       ? () => commitAtomic(() => onChange(defaultValue))
       : undefined
-  const q = useSearchQuery()
-  if (!rowMatchesQuery(label, q)) return null
+  if (!useRowMatchesQuery(label)) return null
   return (
     <div data-search-label={label} className="flex items-center justify-between py-1 text-xs">
       <span
