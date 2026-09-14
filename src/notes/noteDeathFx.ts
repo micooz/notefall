@@ -58,7 +58,12 @@ class NoteDeathFxManager {
     if (this.items.length === 0) return
     let writeIdx = 0
     for (let i = 0; i < this.items.length; i++) {
-      if (now - this.items[i].startTime < FADE_DURATION) {
+      // A negative age means `startTime` was captured under a different
+      // clock — the exporter installs a virtual one that restarts at 0
+      // (see `clockEpoch`). Such a ghost would never reach FADE_DURATION
+      // and would sit on screen, fully opaque, for the whole render.
+      const age = now - this.items[i].startTime
+      if (age >= 0 && age < FADE_DURATION) {
         if (writeIdx !== i) this.items[writeIdx] = this.items[i]
         writeIdx++
       }
